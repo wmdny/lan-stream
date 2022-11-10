@@ -1,0 +1,10 @@
+spring:
+  servlet:
+    multipart:
+      max-file-size: 10MB
+  web:
+    resources:
+      static-locations: classpath:/META-INF/resources/,classpath:/resources/,classpath:/static/,classpath:/public/,file:${web.upload-path}
+
+web:
+  upload-path: /Users/ws/Downloads
