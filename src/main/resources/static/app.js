@@ -1,26 +1,28 @@
 var stompClient = null;
 
 function setConnected(connected) {
-    $("#connect").prop("disabled", connected);
-    $("#disconnect").prop("disabled", !connected);
     if (connected) {
-        $("#conversation").show();
+        $("#status").attr("style", "background-color: green");
+        $("#status").text("已连接")
+    } else {
+        $("#status").attr("style", "background-color: red");
+        $("#status").text("断开连接")
     }
-    else {
-        $("#conversation").hide();
-    }
-    $("#greetings").html("");
 }
 
 function connect() {
-    var socket = new SockJS('/lan-stream');
+    const socket = new SockJS('/lan-stream');
     stompClient = Stomp.over(socket);
     stompClient.connect({}, function (frame) {
         setConnected(true);
         console.log('Connected: ' + frame);
         stompClient.subscribe('/topic/message', function (greeting) {
-            showGreeting(JSON.parse(greeting.body));
+            showMessage(JSON.parse(greeting.body));
         });
+    }, function (message) {
+        console.log(message)
+        stompClient.disconnect();
+        setConnected(false);
     });
 }
 
@@ -32,9 +34,14 @@ function disconnect() {
     console.log("Disconnected");
 }
 
-function sendName() {
-    const json = {'type': 'txt', 'content': $("#name").val()}
+function sendMessage() {
+    const msg = $("#message").val();
+    if (!msg) {
+        return
+    }
+    const json = {'type': 'text', 'content': msg}
     stompClient.send("/app/send", {}, JSON.stringify(json));
+    $("#message").val("")
 }
 
 function sendFile() {
@@ -44,50 +51,123 @@ function sendFile() {
     if (files.length <= 0) {
         return;
     }
+    const fileName = files[0].name;
     const fd = new FormData();
-    let res;
     fd.append('file', files[0])
     $.ajax({
         method: 'POST',
         url: "/file-upload",
         data: fd,
-        // 不修改 Content-Type 属性，使用 FormData 默认的 Content-Type 值
         contentType: false,
-        // 不对 FormData 中的数据进行 url 编码，而是将 FormData 数据原样发送到服务器
         processData: false,
-        success: function(data) {
+        success: function (data) {
             const json = {
-                'type': 'pic',
+                'type': fileName.substr(fileName.lastIndexOf('.') + 1),
+                'fileName': fileName,
+                'fileSize': (files[0].size / 1024 / 1024).toFixed(2),
                 'content': data
             }
             stompClient.send("/app/send", {}, JSON.stringify(json));
             $("#myfile").val("")
         }
     })
-    
+
 }
 
-function showGreeting(data) {
+function showMessage(data) {
     if (!data) {
         return
     }
-    if (data.type === 'txt') {
-        $("#greetings").append("<tr><td>" + data.content + "</td></tr>");
-    } else if (data.type === 'pic') {
-        $("#greetings").append(`<tr><td><a href="#" class="thumbnail"><img src="${data.content}" alt=""></a></td></tr>`);
+    if (isAssetTypeAnImage(data.type)) {
+        $("#history").prepend(`<tr><td><span><a href="#" class="thumbnail"><img src="${data.content}" alt=""></a>
+        <span class="msg-time">${new Date(data.timestamp).toLocaleString()}</span>
+        </span></td></tr>`);
+    } else if (data.type === 'text') {
+        $("#history").prepend(`<tr><td onclick="copyTextToClipboard('${data.content}')">
+        <span>${data.content}</span><br/>
+        <span class="msg-time">${new Date(data.timestamp).toLocaleString()}</span>
+        </td></tr>`);
+    } else {
+        $("#history").prepend(`<tr><td onclick="downloadFile('${data.content}')">
+        <span class="glyphicon glyphicon-download-alt" aria-hidden="true"></span>
+        <p>${data.fileName}</p> <p>${data.fileSize} MB</p><br/>
+        <span class="msg-time">${new Date(data.timestamp).toLocaleString()}</span></span>
+        </td></tr>`);
     }
 }
 
-$(function () {
+function showHistoryMsg() {
+    $.ajax({
+        method: 'get',
+        url: "/history",
+        success: function (data) {
+            data.forEach(e => {
+                showMessage(e)
+            })
+        }
+    })
+}
+
+window.onload = function () {
     $("form").on('submit', function (e) {
         e.preventDefault();
     });
-    $( "#connect" ).click(function() { connect(); });
-    $( "#disconnect" ).click(function() { disconnect(); });
-    $( "#send" ).click(function() { sendName(); });
-    $( "#myfile").change(function() { sendFile(); });
-});
+    $("#connect").click(function () {
+        connect();
+    });
+    $("#disconnect").click(function () {
+        disconnect();
+    });
+    $("#send").click(function () {
+        sendMessage();
+    });
+    $("#myfile").change(function () {
+        sendFile();
+    });
+    connect();
+    showHistoryMsg();
+}
 
-window.onload=function(){
-    connect()
+
+/**
+ * https://stackoverflow.com/questions/400212/how-do-i-copy-to-the-clipboard-in-javascript
+ */
+function copyTextToClipboard(text) {
+    if (!text) {
+        text = document.querySelector('#result-area').textContent
+    }
+    var textArea = document.createElement("textarea");
+    textArea.style.position = 'fixed';
+    textArea.style.top = 0;
+    textArea.style.left = 0;
+    textArea.style.width = '2em';
+    textArea.style.height = '2em';
+    textArea.style.padding = 0;
+    textArea.style.border = 'none';
+    textArea.style.outline = 'none';
+    textArea.style.boxShadow = 'none';
+    textArea.style.background = 'transparent';
+    textArea.value = text;
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    try {
+        var successful = document.execCommand('copy');
+        var msg = successful ? 'successful' : 'unsuccessful';
+        console.log('Copying text command was ' + msg);
+    } catch (err) {
+        console.log('Oops, unable to copy');
+    }
+    document.body.removeChild(textArea);
+}
+
+function isAssetTypeAnImage(ext) {
+    return ['png', 'jpg', 'jpeg', 'bmp', 'gif', 'svg', 'webp'].indexOf(ext.toLowerCase()) !== -1;
+}
+
+function downloadFile(url) {
+    var $form = $('<form method="GET"></form>');
+    $form.attr('action', url);
+    $form.appendTo($('body'));
+    $form.submit();
 }

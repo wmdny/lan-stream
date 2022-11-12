@@ -12,3 +12,21 @@ body {
     -moz-border-radius: 5px;
     border-radius: 5px;
 }
+
+#status {
+    border-radius: 15px;
+    padding: 3px 12px;
+    color: #fff;
+    margin-bottom: 5px;
+}
+
+#history tr td span{
+    word-break: break-word;
+}
+
+.msg-time{
+    display: block;
+    text-align: right;
+    font-size: .6em;
+    color: #979797;
+}
