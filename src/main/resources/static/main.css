@@ -1,0 +1,43 @@
+body {
+    background-color: #f5f5f5;
+}
+
+#main-content {
+    max-width: 940px;
+    padding: 2em 3em;
+    margin: 0 auto 20px;
+    background-color: #fff;
+    border: 1px solid #e5e5e5;
+    -webkit-border-radius: 5px;
+    -moz-border-radius: 5px;
+    border-radius: 5px;
+}
+
+#status {
+    border-radius: 15px;
+    padding: 3px 12px;
+    color: #fff;
+    margin-bottom: 5px;
+}
+
+#history tr td span{
+    word-break: break-word;
+}
+
+#history tr td span:hover{
+    cursor: pointer;
+}
+
+.msg-time{
+    display: block;
+    text-align: right;
+    font-size: .6em;
+    color: #979797;
+}
+#tip {
+    position: absolute;
+    top: 50px;
+    left: 50%;
+    display: none;
+    z-index: 9999;
+}
