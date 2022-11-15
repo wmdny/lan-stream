@@ -79,18 +79,18 @@ function showMessage(data) {
         return
     }
     if (isAssetTypeAnImage(data.type)) {
-        $("#history").prepend(`<tr><td onclick="downloadFile('${data.content}');">
-        <span><a href="#" class="thumbnail"><img src="${data.content}" alt=""></a>
+        $("#history").prepend(`<tr><td>
+        <span onclick="downloadFile('${data.content}');"><a href="#" class="thumbnail"><img src="${data.content}" alt=""></a>
         <span class="msg-time">${new Date(data.timestamp).toLocaleString()}</span>
         </span></td></tr>`);
     } else if (data.type === 'text') {
-        $("#history").prepend(`<tr><td onclick="copyTextToClipboard('${data.content}')">
-        <span>${data.content}</span><br/>
+        $("#history").prepend(`<tr><td>
+        <span onclick="copyTextToClipboard('${data.content}')">${data.content}</span><br/>
         <span class="msg-time">${new Date(data.timestamp).toLocaleString()}</span>
         </td></tr>`);
     } else {
-        $("#history").prepend(`<tr><td onclick="downloadFile('${data.content}')">
-        <span class="glyphicon glyphicon-download-alt" aria-hidden="true"></span>
+        $("#history").prepend(`<tr><td>
+        <span class="glyphicon glyphicon-download-alt" aria-hidden="true" onclick="downloadFile('${data.content}')"></span>
         <p>${data.fileName}</p> <p>${data.fileSize} MB</p><br/>
         <span class="msg-time">${new Date(data.timestamp).toLocaleString()}</span></span>
         </td></tr>`);
